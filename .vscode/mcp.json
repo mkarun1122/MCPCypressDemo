@@ -1,0 +1,7 @@
+{
+ "name":"cypress",
+ "command":"node",
+ "args":[
+  "mcp-server/cypress-server.js"
+ ]
+}

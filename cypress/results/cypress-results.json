@@ -1,0 +1,130 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 7,
+    "passes": 7,
+    "pending": 0,
+    "failures": 0,
+    "start": "2026-06-06T20:27:58.191Z",
+    "end": "2026-06-06T20:28:22.669Z",
+    "duration": 24478
+  },
+  "tests": [
+    {
+      "title": "Scenario 7: UI checks",
+      "fullTitle": "Practice Test Automation Login Scenario 7: UI checks",
+      "file": null,
+      "duration": 2730,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 1: Valid login",
+      "fullTitle": "Practice Test Automation Login Scenario 1: Valid login",
+      "file": null,
+      "duration": 5100,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 2: Invalid username",
+      "fullTitle": "Practice Test Automation Login Scenario 2: Invalid username",
+      "file": null,
+      "duration": 1684,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 3: Invalid password",
+      "fullTitle": "Practice Test Automation Login Scenario 3: Invalid password",
+      "file": null,
+      "duration": 2594,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 4: Empty fields",
+      "fullTitle": "Practice Test Automation Login Scenario 4: Empty fields",
+      "file": null,
+      "duration": 1183,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 6: Error validation",
+      "fullTitle": "Practice Test Automation Login Scenario 6: Error validation",
+      "file": null,
+      "duration": 1520,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 5: Logout",
+      "fullTitle": "Practice Test Automation Login Scenario 5: Logout",
+      "file": null,
+      "duration": 3623,
+      "currentRetry": 0,
+      "err": {}
+    }
+  ],
+  "pending": [],
+  "failures": [],
+  "passes": [
+    {
+      "title": "Scenario 7: UI checks",
+      "fullTitle": "Practice Test Automation Login Scenario 7: UI checks",
+      "file": null,
+      "duration": 2730,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 1: Valid login",
+      "fullTitle": "Practice Test Automation Login Scenario 1: Valid login",
+      "file": null,
+      "duration": 5100,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 2: Invalid username",
+      "fullTitle": "Practice Test Automation Login Scenario 2: Invalid username",
+      "file": null,
+      "duration": 1684,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 3: Invalid password",
+      "fullTitle": "Practice Test Automation Login Scenario 3: Invalid password",
+      "file": null,
+      "duration": 2594,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 4: Empty fields",
+      "fullTitle": "Practice Test Automation Login Scenario 4: Empty fields",
+      "file": null,
+      "duration": 1183,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 6: Error validation",
+      "fullTitle": "Practice Test Automation Login Scenario 6: Error validation",
+      "file": null,
+      "duration": 1520,
+      "currentRetry": 0,
+      "err": {}
+    },
+    {
+      "title": "Scenario 5: Logout",
+      "fullTitle": "Practice Test Automation Login Scenario 5: Logout",
+      "file": null,
+      "duration": 3623,
+      "currentRetry": 0,
+      "err": {}
+    }
+  ]
+}
