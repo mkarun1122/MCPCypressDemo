@@ -124,38 +124,112 @@ function getLatestReportFile(directory) {
     .pop();
 }
 
-function collectTests(result) {
-  if (Array.isArray(result.tests) && result.tests.length) {
-    return result.tests.map((test) => ({
+function collectTests(report) {
+  const tests = [];
+
+  // Handle aggregated results from multiple specs
+  if (Array.isArray(report.results) && report.results.length > 0) {
+    report.results.forEach((specResult, specIndex) => {
+      const specFile = extractSpecFileFromResult(specResult, specIndex);
+
+      if (Array.isArray(specResult.tests)) {
+        specResult.tests.forEach((test) => {
+          tests.push({
+            ...test,
+            state: getTestStateFromResult(specResult, test.fullTitle),
+            spec: specFile,
+          });
+        });
+      }
+    });
+  } else if (Array.isArray(report.tests) && report.tests.length) {
+    // Single spec result
+    return report.tests.map((test) => ({
       ...test,
-      state: getTestState(result, test.fullTitle),
+      state: getTestState(report, test.fullTitle),
+      spec: "unknown",
     }));
   }
 
-  const tests = [];
+  // If no tests found in above, walk the suite structure
+  if (tests.length === 0) {
+    function walkSuite(suite, titlePath = [], specFile = "unknown") {
+      const currentPath = suite.title ? [...titlePath, suite.title] : titlePath;
 
-  function walkSuite(suite, titlePath = []) {
-    const currentPath = suite.title ? [...titlePath, suite.title] : titlePath;
-
-    if (Array.isArray(suite.tests)) {
-      suite.tests.forEach((test) => {
-        tests.push({
-          ...test,
-          fullTitle: [...currentPath, test.title].join(" "),
+      if (Array.isArray(suite.tests)) {
+        suite.tests.forEach((test) => {
+          tests.push({
+            ...test,
+            fullTitle: [...currentPath, test.title].join(" "),
+            spec: specFile,
+            state: "unknown",
+          });
         });
+      }
+
+      if (Array.isArray(suite.suites)) {
+        suite.suites.forEach((childSuite) =>
+          walkSuite(childSuite, currentPath, specFile),
+        );
+      }
+    }
+
+    if (Array.isArray(report.results)) {
+      report.results.forEach((result, idx) => {
+        const specFile = extractSpecFileFromResult(result, idx);
+        if (Array.isArray(result.results)) {
+          result.results.forEach((suite) => walkSuite(suite, [], specFile));
+        }
       });
     }
-
-    if (Array.isArray(suite.suites)) {
-      suite.suites.forEach((childSuite) => walkSuite(childSuite, currentPath));
-    }
-  }
-
-  if (Array.isArray(result.results)) {
-    result.results.forEach((suite) => walkSuite(suite));
   }
 
   return tests;
+}
+
+function extractSpecFileFromResult(result, index) {
+  // Try to find spec name from the result object
+  if (result.config && result.config.specPattern) {
+    return result.config.specPattern;
+  }
+
+  // Fallback: try to infer from test titles
+  if (result.tests && result.tests.length > 0) {
+    const firstTest = result.tests[0];
+    if (firstTest.file) return firstTest.file;
+
+    // Try to extract from fullTitle
+    const match = firstTest.fullTitle.match(/(login|treez)/i);
+    if (match) {
+      return match[0].toLowerCase() === "treez"
+        ? "treez-login.cy.js"
+        : "login.cy.js";
+    }
+  }
+
+  return `spec-${index}.cy.js`;
+}
+
+function getTestStateFromResult(result, fullTitle) {
+  if (
+    Array.isArray(result.passes) &&
+    result.passes.some((test) => test.fullTitle === fullTitle)
+  ) {
+    return "passed";
+  }
+  if (
+    Array.isArray(result.failures) &&
+    result.failures.some((test) => test.fullTitle === fullTitle)
+  ) {
+    return "failed";
+  }
+  if (
+    Array.isArray(result.pending) &&
+    result.pending.some((test) => test.fullTitle === fullTitle)
+  ) {
+    return "pending";
+  }
+  return "unknown";
 }
 
 function getTestState(result, fullTitle) {
@@ -210,13 +284,42 @@ function normalizePath(value) {
 }
 
 function createHtml(rows) {
-  const rowsHtml = rows
-    .map((row) => {
-      const screenshotTag = row.screenshot
-        ? `<a href="${row.relativeScreenshotPath}" target="_blank"><img src="${row.relativeScreenshotPath}" alt="Screenshot" style="max-width:300px; max-height:200px; display:block; margin-top:0.5rem; border:1px solid #ddd;" /></a>`
-        : "";
+  // Group rows by spec file
+  const rowsBySpec = {};
+  rows.forEach((row) => {
+    const spec = row.spec || "unknown";
+    if (!rowsBySpec[spec]) {
+      rowsBySpec[spec] = [];
+    }
+    rowsBySpec[spec].push(row);
+  });
 
+  // Generate spec summary
+  const specSummary = Object.entries(rowsBySpec)
+    .map(([spec, specRows]) => {
+      const passed = specRows.filter((r) => r.status === "Passed").length;
+      const failed = specRows.filter((r) => r.status === "Failed").length;
+      const total = specRows.length;
       return `
+        <tr>
+          <td><strong>${escapeHtml(spec)}</strong></td>
+          <td>${total}</td>
+          <td style="color: green;">${passed}</td>
+          <td style="color: red;">${failed}</td>
+        </tr>`;
+    })
+    .join("\n");
+
+  // Generate detailed rows for each spec
+  const detailedRowsHtml = Object.entries(rowsBySpec)
+    .map(([spec, specRows]) => {
+      const specRows_html = specRows
+        .map((row) => {
+          const screenshotTag = row.screenshot
+            ? `<a href="${row.relativeScreenshotPath}" target="_blank"><img src="${row.relativeScreenshotPath}" alt="Screenshot" style="max-width:300px; max-height:200px; display:block; margin-top:0.5rem; border:1px solid #ddd;" /></a>`
+            : "";
+
+          return `
         <tr>
           <td>${escapeHtml(row.scenario)}</td>
           <td>${row.steps}</td>
@@ -225,6 +328,26 @@ function createHtml(rows) {
           <td>${escapeHtml(row.status)}</td>
           <td>${screenshotTag}</td>
         </tr>`;
+        })
+        .join("\n");
+
+      return `
+      <h2>${escapeHtml(spec)}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Steps</th>
+            <th>Expected</th>
+            <th>Actual</th>
+            <th>Status</th>
+            <th>Screenshot</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${specRows_html}
+        </tbody>
+      </table>`;
     })
     .join("\n");
 
@@ -235,32 +358,40 @@ function createHtml(rows) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cypress Execution Results</title>
   <style>
-    body { font-family: Arial, Helvetica, sans-serif; margin: 24px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ccc; padding: 10px; vertical-align: top; }
-    th { background: #f3f3f3; text-align: left; }
+    body { font-family: Arial, Helvetica, sans-serif; margin: 24px; background-color: #f9f9f9; }
+    h1 { color: #333; }
+    h2 { color: #0066cc; margin-top: 2rem; border-bottom: 2px solid #0066cc; padding-bottom: 0.5rem; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: white; }
+    th, td { border: 1px solid #ccc; padding: 12px; vertical-align: top; text-align: left; }
+    th { background: #e8f0ff; color: #333; font-weight: bold; }
     tr:nth-child(even) { background: #fafafa; }
-    code { white-space: pre-wrap; }
+    tr:hover { background: #f0f0f0; }
+    code { white-space: pre-wrap; font-family: monospace; }
+    .summary-table td { text-align: center; }
+    .summary-table td:first-child { text-align: left; }
   </style>
 </head>
 <body>
   <h1>Cypress Execution Results</h1>
   <p>Generated from manual test case files in <code>cypress/manual-testing</code> and Cypress run output.</p>
-  <table>
+  
+  <h2>Execution Summary</h2>
+  <table class="summary-table">
     <thead>
       <tr>
-        <th>Scenario</th>
-        <th>Steps</th>
-        <th>Expected</th>
-        <th>Actual</th>
-        <th>Status</th>
-        <th>Screenshot</th>
+        <th>Spec File</th>
+        <th>Total Tests</th>
+        <th style="color: green;">Passed</th>
+        <th style="color: red;">Failed</th>
       </tr>
     </thead>
     <tbody>
-      ${rowsHtml}
+      ${specSummary}
     </tbody>
   </table>
+
+  <h2>Detailed Results</h2>
+  ${detailedRowsHtml}
 </body>
 </html>`;
 }
@@ -334,8 +465,15 @@ function buildRows(testCases, tests) {
       status: test.state === "passed" ? "Passed" : "Failed",
       screenshot: Boolean(screenshotAbsolute),
       relativeScreenshotPath,
+      spec: extractSpecFileName(test.spec || test.fullTitle),
     };
   });
+}
+
+function extractSpecFileName(fullPath) {
+  // Extract spec file name from full path or title
+  const match = fullPath.match(/([^\/\\]+\.cy\.js)/);
+  return match ? match[1] : "unknown";
 }
 
 function main() {
