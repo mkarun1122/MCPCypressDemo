@@ -17,12 +17,12 @@ flowchart LR
   B --> H[Results / Screenshots]
   H --> I[cypress-results.json]
   H --> J[screenshots/]
-  B --> K[scripts/*.js]
+  B --> K[scripts-js]
   K --> L[generate-cypress-results.js]
   K --> M[run-cypress-json.js]
   D --> N[cypress/mcp-server/cypress-server.js]
   E --> N
-  N -->|provides endpoints| O[App Under Test (mocked)]
+  N --> O[App Under Test Mocked]
 ```
 
 ## File Structure
